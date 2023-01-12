@@ -1,32 +1,80 @@
-import React from 'react'
-import {BrowserRouter as Router, Routes, Route}
-    from 'react-router-dom';
-import Home from './pages/home';
-import Profile from './pages/profile';
-import Product from './pages/product';
-import Cart from './pages/cart';
-import Login from "./pages/login";
-import WithoutNav from "./components/withoutNav";
-import WithNav from "./components/withNav";
+import './style/App.scss';
+import {BrowserRouter, Routes, Route, useParams, Navigate} from 'react-router-dom'
+import Product from './components/Product/Product';
+import Profile from './components/User/Profile';
+import Cart from './components/Cart/Cart';
+import Navigation from './components/Home/Navigation';
+import Container from 'react-bootstrap/Container';
+import Login from "./components/Auth/Login";
 
-const App = () => {
-    return (
-        <Router>
-            <Routes>
-                <Route element={<WithoutNav />}>
-                    <Route path="/" element={<Login/>}/>
-                </Route>
-                <Route element={<WithNav />}>
-                    <Route path='/home' element={<Home/>}/>
-                    <Route path='/product' element={<Product/>}/>
-                    <Route path='/Profile' element={<Profile/>}/>
-                    <Route path='/Cart' element={<Cart/>}/>
-                </Route>
-            </Routes>
+import React, {Component} from 'react';
+import ProductList from "./components/Product/ProductList";
 
-        </Router>
+interface IProps {
 
-    )
 }
 
-export default App
+
+class App extends Component<IProps> {
+    constructor(props: IProps) {
+        super(props);
+    }
+
+    componentDidMount() {
+        this.setState({
+            isLoggedIn: !!sessionStorage.getItem("token")
+        })
+    }
+
+    render() {
+        return (
+            <div className="App">
+                <BrowserRouter>
+                    <div>
+                        <Navigation/>
+                    </div>
+                    <Container>
+                        <Routes>
+                            <Route path='/' element={<ProductList/>}/>
+                            <Route path='/product/:id' element={<Product/>}/>
+                            <Route path={'/profile'}
+                                   element={<ProtectedRoute outlet={<Profile/>}
+                                                            authenticationPath={"/login"}/>}/>
+                            <Route path={'/cart'}
+                                   element={<ProtectedRoute outlet={<Cart/>}
+                                                            authenticationPath={"/login"}/>}/>
+                            <Route path='/login' element={<Login/>}/>
+                        </Routes>
+                    </Container>
+                </BrowserRouter>
+            </div>
+        );
+    }
+}
+
+function withRouter(Child: any) {
+    return function withRouter(props: any) {
+        const id = useParams;
+        return <Child {...props} id={id}/>;
+    }
+}
+
+type ProtectedRouteProps = {
+    authenticationPath: string;
+    outlet: JSX.Element;
+};
+
+
+function ProtectedRoute({authenticationPath, outlet}: ProtectedRouteProps) {
+    let isLoggedIn = !!sessionStorage.getItem("token");
+    if (isLoggedIn) {
+        return outlet;
+    } else {
+        return <Navigate to={{pathname: authenticationPath}}/>;
+    }
+}
+
+const defaultProtectedRouteProps: Omit<ProtectedRouteProps, 'outlet'> = {
+    authenticationPath: '/login',
+}
+export default App;
